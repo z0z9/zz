@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+
+        #menu, #editor {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            display: none;
+            z-index: 1000;
+        }
+
+        #menu ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        #menu ul li {
+            margin: 10px 0;
+            cursor: pointer;
+        }
+
+        #menu ul li:hover {
+            text-decoration: underline;
+        }
+
+        #editor textarea {
+            width: 100%;
+            height: 150px;
+            margin-bottom: 10px;
+        }
+
+        #editor button {
+            margin-right: 10px;
+        }
+
+        #notificationLight {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            width: 20px;
+            height: 20px;
+            background-color: green;
+            border-radius: 50%;
+            display: none;
+            z-index: 1100;
+        }
+
+        #bottomLight {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: none;
+            z-index: 1100;
+        }
+    </style>
+</head>
+<body>
+    <div id="menu">
+        <ul>
+            <li data-key="1">تعديل النص 1</li>
+            <li data-key="2">تعديل النص 2</li>
+            <li data-key="3">تعديل النص 3</li>
+            <li data-key="4">تعديل النص 4</li>
+            <li data-key="5">تعديل النص 5</li>
+            <li data-key="6">تعديل النص 6</li>
+            <li data-key="7">تعديل النص 7</li>
+            <li data-key="8">تعديل النص 8</li>
+            <li data-key="9">تعديل النص 9</li>
+            <li data-key="0">تعديل النص 0</li>
+        </ul>
+    </div>
+
+    <div id="editor">
+        <textarea id="editorText"></textarea>
+        <button id="saveBtn">حفظ</button>
+        <button id="cancelBtn">إلغاء</button>
+    </div>
+
+    <div id="notificationLight"></div>
+    <div id="bottomLight"></div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js"></script>
+
+    <script>
+        // إعدادات Firebase الخاصة بك:
+        const firebaseConfig = {
+            apiKey: "AIzaSyBL57JxMvoUKer8Z4oVyrpGuuG3SriGG6o",
+            authDomain: "z90x-8dbe0.firebaseapp.com",
+            projectId: "z90x-8dbe0",
+            storageBucket: "z90x-8dbe0.firebasestorage.app",
+            messagingSenderId: "147593664356",
+            appId: "1:147593664356:web:ce5b7763554ed6dd918c71",
+            measurementId: "G-RHQHW80PCR"
+        };
+
+        // تهيئة Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const analytics = firebase.analytics();
+
+        // النصوص الافتراضية (في حالة عدم وجودها في القاعدة)
+        const codeSnippets = {
+            '1': 'النص 1',
+            '2': 'النص 2',
+            '3': 'النص 3',
+            '4': 'النص 4',
+            '5': 'النص 5',
+            '6': 'النص 6',
+            '7': 'النص 7',
+            '8': 'النص 8',
+            '9': 'النص 9',
+            '0': 'النص 0'
+        };
+
+        const menu = document.getElementById('menu');
+        const editor = document.getElementById('editor');
+        const editorText = document.getElementById('editorText');
+        const saveBtn = document.getElementById('saveBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const bottomLight = document.getElementById('bottomLight');
+        let currentKey = null;
+
+        // إظهار القائمة عند الضغط على Shift
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Shift' && menu.style.display === 'none' && editor.style.display === 'none') {
+                menu.style.display = 'block';
+            }
+        });
+
+        // إخفاء القائمة أو المحرر عند النقر خارجهما
+        document.addEventListener('click', function (event) {
+            if (!menu.contains(event.target) && !editor.contains(event.target)) {
+                menu.style.display = 'none';
+                editor.style.display = 'none';
+            }
+        });
+
+        // عرض النص في المحرر عند اختيار عنصر من القائمة
+        menu.addEventListener('click', async function (event) {
+            const key = event.target.getAttribute('data-key');
+            if (key) {
+                currentKey = key;
+                const storedText = await getText(key);
+                editorText.value = storedText;
+                editor.style.display = 'block';
+                menu.style.display = 'none';
+            }
+        });
+
+        // دالة لجلب النص من القاعدة
+        async function getText(key) {
+            const docRef = db.collection("snippets").doc(key);
+            const docSnap = await docRef.get();
+            if (docSnap.exists) {
+                return docSnap.data().text;
+            } else {
+                return codeSnippets[key] || "";
+            }
+        }
+
+        // حفظ النص المعدل في Firestore
+        saveBtn.addEventListener('click', async function () {
+            if (currentKey) {
+                await db.collection("snippets").doc(currentKey).set({
+                    text: editorText.value
+                });
+                alert('تم حفظ النص بنجاح في Firestore!');
+                editor.style.display = 'none';
+            }
+        });
+
+        // إلغاء التعديل
+        cancelBtn.addEventListener('click', function () {
+            editor.style.display = 'none';
+        });
+
+        // نسخ النصوص باستخدام الأرقام (من Firestore)
+        document.addEventListener('keydown', async function (event) {
+            const key = event.key;
+            if (['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'].includes(key)) {
+                const text = await getText(key);
+                copyText(text);
+            }
+        });
+
+        // زر 'z' للصق من الحافظة إلى Firestore
+        // زر 'a' لنسخ آخر نص من Firestore تم تخزينه بواسطة 'z'
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'z') {
+                pasteFromClipboard();
+            } else if (event.key === 'a') {
+                copyFromLocalStorage();
+            }
+        });
+
+        async function copyText(text) {
+            try {
+                await navigator.clipboard.writeText(text);
+                showNotificationLight('green');
+            } catch (err) {
+                console.error('فشل في النسخ:', err);
+            }
+        }
+
+        function showNotificationLight(color) {
+            const light = document.getElementById('notificationLight');
+            light.style.backgroundColor = color;
+            light.style.display = 'block';
+            setTimeout(() => {
+                light.style.display = 'none';
+            }, 1000);
+        }
+
+        function showBottomLight(color) {
+            bottomLight.style.backgroundColor = color;
+            bottomLight.style.display = 'block';
+            // سيبقى ظاهر دائماً
+        }
+
+        async function pasteFromClipboard() {
+            try {
+                const text = await navigator.clipboard.readText();
+                if (text) {
+                    // تخزين في Firestore بقيمة "clipboardContent" كي نسترجعه لاحقاً
+                    await db.collection("snippets").doc('clipboardContent').set({
+                        text: text
+                    });
+                    showBottomLight('green');
+                } else {
+                    showBottomLight('red');
+                }
+            } catch (err) {
+                showBottomLight('red');
+            }
+        }
+
+        async function copyFromLocalStorage() {
+            // جلب النص من الوثيقة 'clipboardContent'
+            const docRef = db.collection("snippets").doc('clipboardContent');
+            const docSnap = await docRef.get();
+            if (docSnap.exists) {
+                const storedText = docSnap.data().text;
+                copyText(storedText);
+            }
+        }
+    </script>
+</body>
+</html>
