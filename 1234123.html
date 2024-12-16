@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <title>محرر النصوص الذكي</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- أيقونات Google -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!-- تنسيق CSS -->
+    <style>
+        /* إعادة تعيين بعض الأنماط الأساسية */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: #e0f7fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            position: relative;
+            overflow: hidden;
+            padding: 20px;
+        }
+
+        /* تصميم القائمة المنبثقة */
+        #menu {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+            display: none;
+            z-index: 1000;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        #menu h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #00796b;
+        }
+
+        #menu ul {
+            list-style: none;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        #menu ul li {
+            padding: 10px 15px;
+            margin: 8px 0;
+            background-color: #b2dfdb;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        #menu ul li:hover {
+            background-color: #80cbc4;
+        }
+
+        /* تصميم محرر النصوص */
+        #editor {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #ffffff;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+            display: none;
+            z-index: 1000;
+            width: 90%;
+            max-width: 500px;
+        }
+
+        #editor h2 {
+            text-align: center;
+            margin-bottom: 15px;
+            color: #00796b;
+        }
+
+        #editor textarea {
+            width: 100%;
+            height: 150px;
+            padding: 10px;
+            border: 1px solid #b2dfdb;
+            border-radius: 5px;
+            resize: vertical;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+
+        #editor .buttons {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        #editor .buttons button {
+            padding: 8px 16px;
+            margin-left: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        #saveBtn {
+            background-color: #00796b;
+            color: white;
+        }
+
+        #saveBtn:disabled {
+            background-color: #80cbc4;
+            cursor: not-allowed;
+        }
+
+        #saveBtn:hover:not(:disabled) {
+            background-color: #004d40;
+        }
+
+        #cancelBtn {
+            background-color: #b2dfdb;
+            color: #004d40;
+        }
+
+        #cancelBtn:hover {
+            background-color: #80cbc4;
+        }
+
+        /* تصميم الأضواء الإشعارية */
+        .light {
+            position: fixed;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: none;
+            z-index: 1100;
+        }
+
+        #notificationLight {
+            top: 20px;
+            right: 20px;
+        }
+
+        #bottomLight {
+            bottom: 20px;
+            right: 20px;
+            background-color: red; /* اللون الأحمر افتراضيًا */
+            display: block; /* جعله ظاهرًا منذ البداية */
+            transition: background-color 0.3s ease;
+        }
+
+        /* تأثيرات انتقال سلسة */
+        #menu, #editor {
+            transition: all 0.3s ease-in-out;
+        }
+
+        /* رسالة الإشعار */
+        .notification-message {
+            position: fixed;
+            top: 70px;
+            right: 50px;
+            background-color: #ffffffcc;
+            padding: 10px 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            z-index: 1200;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        .notification-message.show {
+            opacity: 1;
+        }
+
+        /* تحسين أداء الأضواء الإشعارية */
+        .light.visible {
+            display: block;
+            animation: fadeIn 0.3s, fadeOut 0.3s 1.7s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+
+        /* زر العائم لفتح القائمة على الهواتف */
+        #openMenuBtn {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background-color: #00796b;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: background-color 0.3s;
+        }
+
+        #openMenuBtn:hover {
+            background-color: #004d40;
+        }
+
+        /* أيقونة القائمة داخل الزر */
+        #openMenuBtn .material-icons {
+            font-size: 24px;
+        }
+
+        /* تخصيص القائمة والمحرر للشاشات الصغيرة */
+        @media (max-width: 600px) {
+            #menu, #editor {
+                width: 95%;
+                max-width: none;
+            }
+
+            #notificationLight, #bottomLight {
+                width: 15px;
+                height: 15px;
+            }
+
+            .notification-message {
+                top: 60px;
+                right: 20px;
+                left: 20px;
+            }
+
+            /* إظهار زر العائم فقط على الشاشات الصغيرة */
+            #openMenuBtn {
+                display: flex;
+            }
+        }
+
+        /* إخفاء زر العائم على الشاشات الأكبر من 600px */
+        @media (min-width: 601px) {
+            #openMenuBtn {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- زر العائم لفتح القائمة على الهواتف -->
+    <button id="openMenuBtn" title="فتح قائمة التحرير">
+        <span class="material-icons">edit</span>
+    </button>
+
+    <!-- قائمة التحرير -->
+    <div id="menu">
+        <h2>اختر النص للتعديل</h2>
+        <ul>
+            <li data-key="1">النص 1 <span class="material-icons">edit</span></li>
+            <li data-key="2">النص 2 <span class="material-icons">edit</span></li>
+            <li data-key="3">النص 3 <span class="material-icons">edit</span></li>
+            <li data-key="4">النص 4 <span class="material-icons">edit</span></li>
+            <li data-key="5">النص 5 <span class="material-icons">edit</span></li>
+            <li data-key="6">النص 6 <span class="material-icons">edit</span></li>
+            <li data-key="7">النص 7 <span class="material-icons">edit</span></li>
+            <li data-key="8">النص 8 <span class="material-icons">edit</span></li>
+            <li data-key="9">النص 9 <span class="material-icons">edit</span></li>
+            <li data-key="0">النص 0 <span class="material-icons">edit</span></li>
+        </ul>
+    </div>
+
+    <!-- محرر النصوص -->
+    <div id="editor">
+        <h2>تحرير النص</h2>
+        <textarea id="editorText" placeholder="أدخل النص هنا..."></textarea>
+        <div class="buttons">
+            <button id="saveBtn">حفظ</button>
+            <button id="cancelBtn">إلغاء</button>
+        </div>
+    </div>
+
+    <!-- الأضواء الإشعارية -->
+    <div id="notificationLight" class="light"></div>
+    <div id="bottomLight" class="light"></div>
+
+    <!-- مكتبات Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js"></script>
+
+    <!-- سكريبت JavaScript -->
+    <script>
+        // إعدادات Firebase الخاصة بك:
+        const firebaseConfig = {
+            apiKey: "AIzaSyBL57JxMvoUKer8Z4oVyrpGuuG3SriGG6o",
+            authDomain: "z90x-8dbe0.firebaseapp.com",
+            projectId: "z90x-8dbe0",
+            storageBucket: "z90x-8dbe0.firebasestorage.app",
+            messagingSenderId: "147593664356",
+            appId: "1:147593664356:web:ce5b7763554ed6dd918c71",
+            measurementId: "G-RHQHW80PCR"
+        };
+
+        // تهيئة Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const analytics = firebase.analytics();
+
+        // النصوص الافتراضية (في حالة عدم وجودها في القاعدة)
+        const codeSnippets = {
+            '1': 'النص 1',
+            '2': 'النص 2',
+            '3': 'النص 3',
+            '4': 'النص 4',
+            '5': 'النص 5',
+            '6': 'النص 6',
+            '7': 'النص 7',
+            '8': 'النص 8',
+            '9': 'النص 9',
+            '0': 'النص 0',
+            'clipboardContent': ''
+        };
+
+        // كائن الحالة المركزي
+        const state = {
+            currentKey: null,
+            isMenuVisible: false,
+            isEditorVisible: false,
+            snippetsCache: {}, // لتخزين النصوص المحملة
+            isSaving: false,
+            isPasting: false,
+            menuOpenedViaKeys: false // منع فتح القائمة عدة مرات أثناء الضغط المستمر
+        };
+
+        // عناصر DOM
+        const menu = document.getElementById('menu');
+        const editor = document.getElementById('editor');
+        const editorText = document.getElementById('editorText');
+        const saveBtn = document.getElementById('saveBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const notificationLight = document.getElementById('notificationLight');
+        const bottomLight = document.getElementById('bottomLight');
+        const openMenuBtn = document.getElementById('openMenuBtn');
+
+        // دالة لإظهار القائمة
+        function showMenu() {
+            if (!state.isMenuVisible && !state.isEditorVisible) {
+                menu.style.display = 'block';
+                state.isMenuVisible = true;
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        // دالة لإخفاء القائمة والمحرر
+        function hideMenuAndEditor() {
+            if (state.isMenuVisible || state.isEditorVisible) {
+                menu.style.display = 'none';
+                editor.style.display = 'none';
+                state.isMenuVisible = false;
+                state.isEditorVisible = false;
+                document.body.style.overflow = 'auto';
+            }
+        }
+
+        // دالة لإظهار المحرر
+        async function showEditor(key) {
+            if (state.isSaving || state.isPasting) return; // منع التداخل أثناء العمليات
+
+            state.currentKey = key;
+            let text = '';
+
+            if (state.snippetsCache[key] !== undefined) {
+                text = state.snippetsCache[key];
+            } else {
+                text = codeSnippets[key] || "";
+            }
+
+            editorText.value = text;
+            editor.style.display = 'block';
+            state.isEditorVisible = true;
+            menu.style.display = 'none';
+            state.isMenuVisible = false;
+            document.body.style.overflow = 'hidden';
+            editorText.focus(); // التركيز على textarea
+        }
+
+        // دالة لجلب النصوص كلها من القاعدة
+        async function loadAllSnippets() {
+            try {
+                const querySnapshot = await db.collection("snippets").get();
+                querySnapshot.forEach((doc) => {
+                    state.snippetsCache[doc.id] = doc.data().text;
+                });
+
+                // تعيين النصوص الافتراضية في حالة عدم وجودها
+                for (const key in codeSnippets) {
+                    if (!(key in state.snippetsCache)) {
+                        state.snippetsCache[key] = codeSnippets[key];
+                    }
+                }
+
+                updateBottomLight();
+            } catch (error) {
+                console.error('فشل في جلب النصوص:', error);
+                showNotificationLight('red', 'خطأ في جلب النصوص!');
+            }
+        }
+
+        // دالة لتحديث ضوء أسفل يمين الشاشة
+        function updateBottomLight() {
+            const clipboardText = state.snippetsCache['clipboardContent'];
+            if (clipboardText && clipboardText.trim() !== "") {
+                setBottomLightColor('green');
+            } else {
+                setBottomLightColor('red');
+            }
+        }
+
+        // دالة لتعيين لون الضوء السفلي
+        function setBottomLightColor(color) {
+            bottomLight.style.backgroundColor = color;
+            bottomLight.style.display = 'block';
+        }
+
+        // دالة لجلب النص من القاعدة (استخدام الكاش الآن)
+        async function getText(key) {
+            return state.snippetsCache[key] || codeSnippets[key] || "";
+        }
+
+        // دالة لحفظ النص المعدل في Firestore
+        async function saveText() {
+            if (!state.currentKey || state.isSaving) return;
+
+            const text = editorText.value.trim();
+            if (text === "") {
+                alert('النص لا يمكن أن يكون فارغاً!');
+                return;
+            }
+
+            state.isSaving = true;
+            saveBtn.disabled = true;
+            cancelBtn.disabled = true;
+
+            try {
+                await db.collection("snippets").doc(state.currentKey).set({
+                    text: text
+                });
+                state.snippetsCache[state.currentKey] = text; // تحديث الكاش
+                showNotificationLight('green', 'تم حفظ النص بنجاح!', 1000); // زمن أقل للإظهار
+                hideMenuAndEditor();
+            } catch (error) {
+                console.error('فشل في حفظ النص:', error);
+                showNotificationLight('red', 'خطأ في حفظ النص!');
+            } finally {
+                state.isSaving = false;
+                saveBtn.disabled = false;
+                cancelBtn.disabled = false;
+            }
+        }
+
+        // دالة لإلغاء التعديل
+        function cancelEdit() {
+            hideMenuAndEditor();
+        }
+
+        // دالة لنسخ النص إلى الحافظة
+        async function copyText(text) {
+            try {
+                await navigator.clipboard.writeText(text);
+                showNotificationLight('green', 'تم نسخ النص!', 1000); // زمن أقل للإظهار
+            } catch (err) {
+                console.error('فشل في النسخ:', err);
+                showNotificationLight('red', 'فشل النسخ!');
+            }
+        }
+
+        // دالة لصق النص من الحافظة إلى Firestore
+        async function pasteFromClipboard() {
+            if (state.isPasting) return;
+
+            state.isPasting = true;
+            showBottomLight('yellow'); // إشارة إلى العملية جارية
+
+            try {
+                const text = await navigator.clipboard.readText();
+                if (text) {
+                    await db.collection("snippets").doc('clipboardContent').set({
+                        text: text
+                    });
+                    state.snippetsCache['clipboardContent'] = text; // تحديث الكاش
+                    updateBottomLight();
+                    showNotificationLight('green', 'تم لصق النص من الحافظة!', 1000); // زمن أقل للإظهار
+                } else {
+                    showNotificationLight('red', 'الحافظة فارغة!');
+                }
+            } catch (err) {
+                console.error('فشل في اللصق:', err);
+                showNotificationLight('red', 'فشل في لصق النص!');
+            } finally {
+                state.isPasting = false;
+            }
+        }
+
+        // دالة لنسخ النص المخزن في Firestore إلى الحافظة
+        async function copyFromLocalStorage() {
+            const key = 'clipboardContent';
+            let text = '';
+
+            text = state.snippetsCache[key] || codeSnippets[key] || "";
+
+            await copyText(text);
+        }
+
+        // دالة لإظهار الضوء الإشعاري ورسالة
+        function showNotificationLight(color, message, duration = 1000) { // زمن افتراضي 1 ثانية
+            notificationLight.style.backgroundColor = color;
+            notificationLight.classList.add('visible');
+
+            // إنشاء عنصر رسالة
+            const msg = document.createElement('div');
+            msg.textContent = message;
+            msg.classList.add('notification-message', 'show');
+            document.body.appendChild(msg);
+
+            // إزالة الرسالة بعد الوقت المحدد
+            setTimeout(() => {
+                notificationLight.classList.remove('visible');
+                msg.classList.remove('show');
+                setTimeout(() => {
+                    if (msg.parentElement) {
+                        document.body.removeChild(msg);
+                    }
+                }, 500);
+            }, duration);
+        }
+
+        // دالة لإظهار الضوء السفلي
+        function showBottomLight(color) {
+            bottomLight.style.backgroundColor = color;
+            bottomLight.style.display = 'block';
+            // يمكن إضافة تأثيرات إضافية إذا رغبت
+        }
+
+        // دالة debounce لتقليل عدد مرات تنفيذ الوظائف
+        function debounce(func, wait) {
+            let timeout;
+            return function(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func.apply(this, args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // إدارة أحداث مفتاح الإدخال لفتح القائمة باستخدام تركيبة المفاتيح Ctrl + Shift
+        function handleCtrlShiftPress(event) {
+            if (event.ctrlKey && event.shiftKey && !state.menuOpenedViaKeys) {
+                // طلب كلمة المرور
+                const password = prompt("يرجى إدخال كلمة المرور لفتح قائمة التحرير:");
+
+                // التحقق من كلمة المرور
+                if (password === '2010') { // قم بتغيير '2010' إلى كلمة المرور المطلوبة
+                    showMenu();
+                    state.menuOpenedViaKeys = true; // منع فتح القائمة مرة أخرى أثناء الضغط المستمر
+
+                    // إعادة تعيين الحالة عندما يتم رفع أحد المفاتيح
+                    const resetMenuOpened = () => {
+                        state.menuOpenedViaKeys = false;
+                        document.removeEventListener('keyup', resetMenuOpened);
+                    };
+
+                    document.addEventListener('keyup', resetMenuOpened);
+                } else if (password !== null) { // إذا لم يتم إلغاء الطلب
+                    showNotificationLight('red', 'كلمة مرور غير صحيحة!', 1500);
+                }
+
+                // يمكن إضافة مهلة زمنية أو إجراءات إضافية حسب الحاجة
+            }
+        }
+
+        // إضافة مستمع للأحداث للتحقق من تركيبة المفاتيح Ctrl + Shift
+        document.addEventListener('keydown', debounce(handleCtrlShiftPress, 300));
+
+        // إضافة مستمع للنقر على زر فتح القائمة على الهواتف
+        openMenuBtn.addEventListener('click', () => {
+            // طلب كلمة المرور
+            const password = prompt("يرجى إدخال كلمة المرور لفتح قائمة التحرير:");
+
+            // التحقق من كلمة المرور
+            if (password === '2010') { // قم بتغيير '2010' إلى كلمة المرور المطلوبة
+                showMenu();
+            } else if (password !== null) { // إذا لم يتم إلغاء الطلب
+                showNotificationLight('red', 'كلمة مرور غير صحيحة!', 1500);
+            }
+        });
+
+        // إدارة الأحداث الأخرى
+        // إخفاء القائمة أو المحرر عند النقر خارجهما
+        document.addEventListener('click', function (event) {
+            if (!menu.contains(event.target) && !editor.contains(event.target) && !openMenuBtn.contains(event.target)) {
+                hideMenuAndEditor();
+            }
+        });
+
+        // عرض النص في المحرر عند اختيار عنصر من القائمة
+        menu.addEventListener('click', function (event) {
+            const li = event.target.closest('li');
+            if (li) {
+                const key = li.getAttribute('data-key');
+                if (key) {
+                    showEditor(key);
+                }
+            }
+        });
+
+        // حفظ النص المعدل في Firestore
+        saveBtn.addEventListener('click', saveText);
+
+        // إلغاء التعديل
+        cancelBtn.addEventListener('click', cancelEdit);
+
+        // نسخ النصوص باستخدام الأرقام (من Firestore)
+        document.addEventListener('keydown', debounce(async function (event) {
+            const key = event.key;
+            // تحقق مما إذا كان التركيز ليس على input أو textarea أو عنصر قابل للتحرير
+            const activeElement = document.activeElement;
+            const isTyping = activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA' || activeElement.isContentEditable;
+
+            if (isTyping) return; // لا تفعل شيئًا إذا كان المستخدم يكتب داخل محرر النصوص أو أي حقل إدخال
+
+            if (['1','2','3','4','5','6','7','8','9','0'].includes(key)) {
+                const text = await getText(key);
+                copyText(text);
+            }
+        }, 300));
+
+        // زر 'z' للصق من الحافظة إلى Firestore
+        // زر 'a' لنسخ آخر نص من Firestore تم تخزينه بواسطة 'z'
+        document.addEventListener('keydown', debounce(function (event) {
+            // تحقق مما إذا كان التركيز ليس على input أو textarea أو عنصر قابل للتحرير
+            const activeElement = document.activeElement;
+            const isTyping = activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA' || activeElement.isContentEditable;
+
+            if (isTyping) return; // لا تفعل شيئًا إذا كان المستخدم يكتب داخل محرر النصوص أو أي حقل إدخال
+
+            if (event.key.toLowerCase() === 'z') {
+                pasteFromClipboard();
+            } else if (event.key.toLowerCase() === 'a') {
+                copyFromLocalStorage();
+            }
+        }, 300));
+
+        // إعداد مستمعات Firestore الحية لمتابعة التحديثات
+        function setupFirestoreListeners() {
+            db.collection("snippets").onSnapshot((snapshot) => {
+                snapshot.docChanges().forEach((change) => {
+                    const doc = change.doc;
+                    const key = doc.id;
+                    const data = doc.data();
+
+                    if (change.type === "added" || change.type === "modified") {
+                        state.snippetsCache[key] = data.text;
+                        if (key === 'clipboardContent') {
+                            updateBottomLight();
+                        }
+                    }
+
+                    if (change.type === "removed") {
+                        delete state.snippetsCache[key];
+                        if (key === 'clipboardContent') {
+                            updateBottomLight();
+                        }
+                    }
+                });
+            }, (error) => {
+                console.error('مستمع Firestore فشل:', error);
+                showNotificationLight('red', 'خطأ في مستمع Firestore!');
+            });
+        }
+
+        // تحميل النصوص عند فتح الموقع
+        window.addEventListener('DOMContentLoaded', async () => {
+            await loadAllSnippets();
+            setupFirestoreListeners();
+        });
+    </script>
+</body>
+</html>
