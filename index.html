@@ -2,7 +2,7 @@
 <html lang="ar">
 <head>
     <meta charset="UTF-8">
-    <title></title>
+    <title>محرر النصوص الذكي</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- أيقونات Google -->
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
@@ -487,10 +487,10 @@
         async function copyText(text) {
             try {
                 await navigator.clipboard.writeText(text);
-                showNotificationLight('green', 'تم نسخ النص!', 1000); // زمن أقل للإظهار
+                showLightIndicator('green', 1000); // إظهار الضوء الأخضر لمدة 1 ثانية
             } catch (err) {
                 console.error('فشل في النسخ:', err);
-                showNotificationLight('red', 'فشل النسخ!');
+                showLightIndicator('red', 1500); // إظهار الضوء الأحمر لمدة 1.5 ثانية
             }
         }
 
@@ -551,6 +551,17 @@
                         document.body.removeChild(msg);
                     }
                 }, 500);
+            }, duration);
+        }
+
+        // دالة لإظهار الضوء الإشعاري فقط بدون رسالة
+        function showLightIndicator(color, duration = 1000) { // زمن افتراضي 1 ثانية
+            notificationLight.style.backgroundColor = color;
+            notificationLight.classList.add('visible');
+
+            // إزالة الضوء بعد الوقت المحدد
+            setTimeout(() => {
+                notificationLight.classList.remove('visible');
             }, duration);
         }
 
