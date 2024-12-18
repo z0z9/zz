@@ -2,7 +2,7 @@
 <html lang="ar">
 <head>
     <meta charset="UTF-8">
-    <title></title>
+    <title>محرر النصوص</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- أيقونات Google -->
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
@@ -42,6 +42,11 @@
             z-index: 1000;
             width: 90%;
             max-width: 400px;
+            transition: all 0.3s ease-in-out;
+        }
+
+        #menu.show {
+            display: block;
         }
 
         #menu h2 {
@@ -72,6 +77,18 @@
             background-color: #80cbc4;
         }
 
+        /* زر إغلاق القائمة */
+        #closeMenuBtn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 24px;
+            color: #00796b;
+        }
+
         /* تصميم محرر النصوص */
         #editor {
             position: fixed;
@@ -86,12 +103,18 @@
             z-index: 1000;
             width: 90%;
             max-width: 500px;
+            transition: all 0.3s ease-in-out;
+        }
+
+        #editor.show {
+            display: block;
         }
 
         #editor h2 {
             text-align: center;
             margin-bottom: 15px;
             color: #00796b;
+            font-size: 20px;
         }
 
         #editor textarea {
@@ -274,24 +297,28 @@
 
     <!-- قائمة التحرير -->
     <div id="menu">
-        <h2>اختر النص للتعديل</h2>
+        <!-- زر إغلاق القائمة -->
+        <button id="closeMenuBtn" title="إغلاق القائمة">
+            <span class="material-icons">close</span>
+        </button>
+        <h2>اختر رقم النص للتعديل</h2>
         <ul>
-            <li data-key="1">النص 1 <span class="material-icons">edit</span></li>
-            <li data-key="2">النص 2 <span class="material-icons">edit</span></li>
-            <li data-key="3">النص 3 <span class="material-icons">edit</span></li>
-            <li data-key="4">النص 4 <span class="material-icons">edit</span></li>
-            <li data-key="5">النص 5 <span class="material-icons">edit</span></li>
-            <li data-key="6">النص 6 <span class="material-icons">edit</span></li>
-            <li data-key="7">النص 7 <span class="material-icons">edit</span></li>
-            <li data-key="8">النص 8 <span class="material-icons">edit</span></li>
-            <li data-key="9">النص 9 <span class="material-icons">edit</span></li>
-            <li data-key="0">النص 0 <span class="material-icons">edit</span></li>
+            <li data-key="1">1 <span class="material-icons">edit</span></li>
+            <li data-key="2">2 <span class="material-icons">edit</span></li>
+            <li data-key="3">3 <span class="material-icons">edit</span></li>
+            <li data-key="4">4 <span class="material-icons">edit</span></li>
+            <li data-key="5">5 <span class="material-icons">edit</span></li>
+            <li data-key="6">6 <span class="material-icons">edit</span></li>
+            <li data-key="7">7 <span class="material-icons">edit</span></li>
+            <li data-key="8">8 <span class="material-icons">edit</span></li>
+            <li data-key="9">9 <span class="material-icons">edit</span></li>
+            <li data-key="0">0 <span class="material-icons">edit</span></li>
         </ul>
     </div>
 
     <!-- محرر النصوص -->
     <div id="editor">
-        <h2>تحرير النص</h2>
+        <h2 id="editorHeader">رقم النص الحالي: </h2>
         <textarea id="editorText" placeholder="أدخل النص هنا..."></textarea>
         <div class="buttons">
             <button id="saveBtn">حفظ</button>
@@ -361,11 +388,13 @@
         const notificationLight = document.getElementById('notificationLight');
         const bottomLight = document.getElementById('bottomLight');
         const openMenuBtn = document.getElementById('openMenuBtn');
+        const closeMenuBtn = document.getElementById('closeMenuBtn');
+        const editorHeader = document.getElementById('editorHeader');
 
         // دالة لإظهار القائمة
         function showMenu() {
             if (!state.isMenuVisible && !state.isEditorVisible) {
-                menu.style.display = 'block';
+                menu.classList.add('show');
                 state.isMenuVisible = true;
                 document.body.style.overflow = 'hidden';
             }
@@ -374,15 +403,28 @@
         // دالة لإخفاء القائمة والمحرر
         function hideMenuAndEditor() {
             if (state.isMenuVisible || state.isEditorVisible) {
-                menu.style.display = 'none';
-                editor.style.display = 'none';
+                menu.classList.remove('show');
+                editor.classList.remove('show');
+                editorHeader.textContent = "رقم النص الحالي: "; // إعادة تعيين الرأس
                 state.isMenuVisible = false;
                 state.isEditorVisible = false;
                 document.body.style.overflow = 'auto';
             }
         }
 
-        // دالة لإظهار المحرر
+        // دالة لإخفاء المحرر وإعادة عرض القائمة مع تحديث رأس المحرر
+        function hideEditorAndShowMenu() {
+            if (state.isEditorVisible) {
+                editor.classList.remove('show');
+                state.isEditorVisible = false;
+                if (state.currentKey) {
+                    editorHeader.textContent = `رقم النص الحالي: ${state.currentKey}`;
+                }
+                showMenu();
+            }
+        }
+
+        // دالة لإظهار المحرر مع تحديث رأس المحرر ليعرض رقم النص الحالي
         async function showEditor(key) {
             if (state.isSaving || state.isPasting) return; // منع التداخل أثناء العمليات
 
@@ -396,9 +438,10 @@
             }
 
             editorText.value = text;
-            editor.style.display = 'block';
+            editorHeader.textContent = `رقم النص الحالي: ${key}`;
+            editor.classList.add('show');
             state.isEditorVisible = true;
-            menu.style.display = 'none';
+            menu.classList.remove('show');
             state.isMenuVisible = false;
             document.body.style.overflow = 'hidden';
             editorText.focus(); // التركيز على textarea
@@ -422,7 +465,7 @@
                 updateBottomLight();
             } catch (error) {
                 console.error('فشل في جلب النصوص:', error);
-                showNotificationLight('red', 'خطأ في جلب النصوص!');
+                showLightIndicator('red', 1500); // تعديل لإظهار الضوء فقط
             }
         }
 
@@ -466,11 +509,11 @@
                     text: text
                 });
                 state.snippetsCache[state.currentKey] = text; // تحديث الكاش
-                showNotificationLight('green', 'تم حفظ النص بنجاح!', 1000); // زمن أقل للإظهار
-                hideMenuAndEditor();
+                showLightIndicator('green', 1000); // إظهار الضوء الأخضر فقط
+                hideEditorAndShowMenu(); // إخفاء المحرر وإعادة عرض القائمة مع تحديث الرأس
             } catch (error) {
                 console.error('فشل في حفظ النص:', error);
-                showNotificationLight('red', 'خطأ في حفظ النص!');
+                showLightIndicator('red', 1500); // إظهار الضوء الأحمر فقط
             } finally {
                 state.isSaving = false;
                 saveBtn.disabled = false;
@@ -480,7 +523,7 @@
 
         // دالة لإلغاء التعديل
         function cancelEdit() {
-            hideMenuAndEditor();
+            hideEditorAndShowMenu();
         }
 
         // دالة لنسخ النص إلى الحافظة
@@ -499,7 +542,7 @@
             if (state.isPasting) return;
 
             state.isPasting = true;
-            showBottomLight('yellow'); // إشارة إلى العملية جارية
+            setBottomLightColor('yellow'); // إشارة إلى العملية جارية
 
             try {
                 const text = await navigator.clipboard.readText();
@@ -509,13 +552,13 @@
                     });
                     state.snippetsCache['clipboardContent'] = text; // تحديث الكاش
                     updateBottomLight();
-                    showNotificationLight('green', 'تم لصق النص من الحافظة!', 1000); // زمن أقل للإظهار
+                    showLightIndicator('green', 1000); // إظهار الضوء الأخضر فقط
                 } else {
-                    showNotificationLight('red', 'الحافظة فارغة!');
+                    showLightIndicator('red', 1500); // إظهار الضوء الأحمر فقط
                 }
             } catch (err) {
                 console.error('فشل في اللصق:', err);
-                showNotificationLight('red', 'فشل في لصق النص!');
+                showLightIndicator('red', 1500); // إظهار الضوء الأحمر فقط
             } finally {
                 state.isPasting = false;
             }
@@ -529,29 +572,6 @@
             text = state.snippetsCache[key] || codeSnippets[key] || "";
 
             await copyText(text);
-        }
-
-        // دالة لإظهار الضوء الإشعاري ورسالة
-        function showNotificationLight(color, message, duration = 1000) { // زمن افتراضي 1 ثانية
-            notificationLight.style.backgroundColor = color;
-            notificationLight.classList.add('visible');
-
-            // إنشاء عنصر رسالة
-            const msg = document.createElement('div');
-            msg.textContent = message;
-            msg.classList.add('notification-message', 'show');
-            document.body.appendChild(msg);
-
-            // إزالة الرسالة بعد الوقت المحدد
-            setTimeout(() => {
-                notificationLight.classList.remove('visible');
-                msg.classList.remove('show');
-                setTimeout(() => {
-                    if (msg.parentElement) {
-                        document.body.removeChild(msg);
-                    }
-                }, 500);
-            }, duration);
         }
 
         // دالة لإظهار الضوء الإشعاري فقط بدون رسالة
@@ -604,7 +624,7 @@
 
                     document.addEventListener('keyup', resetMenuOpened);
                 } else if (password !== null) { // إذا لم يتم إلغاء الطلب
-                    showNotificationLight('red', 'كلمة مرور غير صحيحة!', 1500);
+                    showLightIndicator('red', 1500); // تعديل لإظهار الضوء فقط
                 }
 
                 // يمكن إضافة مهلة زمنية أو إجراءات إضافية حسب الحاجة
@@ -623,8 +643,13 @@
             if (password === '2010') { // قم بتغيير '2010' إلى كلمة المرور المطلوبة
                 showMenu();
             } else if (password !== null) { // إذا لم يتم إلغاء الطلب
-                showNotificationLight('red', 'كلمة مرور غير صحيحة!', 1500);
+                showLightIndicator('red', 1500); // تعديل لإظهار الضوء فقط
             }
+        });
+
+        // إضافة مستمع للنقر على زر إغلاق القائمة
+        closeMenuBtn.addEventListener('click', () => {
+            hideMenuAndEditor();
         });
 
         // إدارة الأحداث الأخرى
@@ -635,8 +660,9 @@
             }
         });
 
-        // عرض النص في المحرر عند اختيار عنصر من القائمة
+        // منع إغلاق القائمة عند النقر داخل القائمة أو المحرر
         menu.addEventListener('click', function (event) {
+            event.stopPropagation();
             const li = event.target.closest('li');
             if (li) {
                 const key = li.getAttribute('data-key');
@@ -644,6 +670,10 @@
                     showEditor(key);
                 }
             }
+        });
+
+        editor.addEventListener('click', function (event) {
+            event.stopPropagation();
         });
 
         // حفظ النص المعدل في Firestore
@@ -707,7 +737,7 @@
                 });
             }, (error) => {
                 console.error('مستمع Firestore فشل:', error);
-                showNotificationLight('red', 'خطأ في مستمع Firestore!');
+                showLightIndicator('red', 1500); // تعديل لإظهار الضوء فقط
             });
         }
 
@@ -715,6 +745,8 @@
         window.addEventListener('DOMContentLoaded', async () => {
             await loadAllSnippets();
             setupFirestoreListeners();
+            // إزالة عرض القائمة تلقائيًا عند تحميل الصفحة
+            // showMenu(); // تم إزالة هذا السطر لمنع عرض القائمة تلقائيًا
         });
     </script>
 </body>
